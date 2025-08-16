@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Quiz SZABJJ</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+  :root{
+    --bg:#000;
+    --card:#0f0f0f;
+    --accent:#e60000;
+    --accent-dark:#b30000;
+    --text:#fff;
+    --muted:#bbb;
+    --timer:#ffd700;
+  }
+  html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,Arial,sans-serif;}
+  .wrap{max-width:900px;margin:0 auto;padding:16px;display:flex;flex-direction:column;min-height:100vh;box-sizing:border-box;}
+  header{padding:18px 10px;text-align:center;border-bottom:3px solid var(--accent);background:linear-gradient(0deg, rgba(255,255,255,0.02), transparent);}
+  header h1{margin:0;color:var(--accent);font-size:1.6rem;letter-spacing:0.6px;}
+  header p{margin:8px 0 0;color:var(--muted);font-size:0.98rem;}
+  main{flex:1;display:flex;align-items:center;justify-content:center;padding:18px;}
+  .card{width:100%;background:var(--card);border-radius:10px;padding:18px;box-sizing:border-box;max-width:820px;box-shadow:0 8px 30px rgba(0,0,0,0.6);}
+  .center{display:flex;flex-direction:column;align-items:center;}
+  label{display:block;margin-bottom:8px;font-weight:600;color:var(--muted);}
+  input[type=text].name{width:100%;padding:10px;border-radius:6px;border:none;font-size:1rem;background:#1a1a1a;color:var(--text);box-sizing:border-box}
+  .btn{background:var(--accent);color:#fff;border:none;padding:10px 16px;border-radius:8px;font-weight:700;cursor:pointer;margin-top:12px}
+  .btn:active{background:var(--accent-dark)}
+  .quiz-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:12px;flex-wrap:wrap}
+  #progress{color:var(--muted);font-weight:700}
+  #timer{color:var(--timer);font-weight:800;font-size:1.05rem}
+  .question{font-size:1.15rem;font-weight:700;margin:8px 0 14px 0}
+  .options{display:flex;flex-direction:column;gap:10px;margin-bottom:12px}
+  .option-btn{background:#121212;border:2px solid transparent;padding:12px 14px;border-radius:8px;color:var(--text);cursor:pointer;text-align:left;font-size:1rem}
+  .option-btn:hover{border-color:var(--accent)}
+  .option-btn.correct{background:linear-gradient(90deg, rgba(0,120,0,0.15), rgba(0,60,0,0.05));border-color:green}
+  .option-btn.wrong{background:linear-gradient(90deg, rgba(120,0,0,0.08), rgba(60,0,0,0.02));border-color:#a00}
+  #feedback{min-height:22px;margin-bottom:10px;font-weight:800}
+  .hidden{display:none}
+  #report{background:#0b0b0b;border:2px solid var(--accent);padding:12px;border-radius:8px;color:var(--text);max-height:60vh;overflow:auto}
+  .report-title{color:var(--accent);font-weight:800;margin-top:0}
+  .small{font-size:0.9rem;color:var(--muted);}
+  footer{display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+  @media(max-width:600px){
+    .card{padding:12px}
+    header h1{font-size:1.3rem}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Quiz SZABJJ</h1>
+    <p>Teste seus conhecimentos sobre Jiu-Jitsu e a linhagem Souza</p>
+  </header>
+
+  <main>
+    <div class="card center" id="startCard">
+      <label for="playerName">Digite seu nome</label>
+      <input class="name" id="playerName" type="text" placeholder="Seu nome aqui" />
+      <button class="btn" id="startBtn">Iniciar Quiz</button>
+    </div>
+
+    <div class="card hidden" id="quizCard" style="width:100%">
+      <div class="quiz-top">
+        <div id="progress">Pergunta 1 de 1</div>
+        <div id="timer">⏳ 00:30</div>
+      </div>
+
+      <div id="questionArea">
+        <div class="question" id="questionText">Pergunta aparecerá aqui</div>
+        <div class="options" id="options"></div>
+        <div id="textAnswerWrap" class="hidden">
+          <input type="text" id="textAnswer" placeholder="Digite a ordem das faixas aqui" style="width:100%;padding:10px;border-radius:6px;border:none;background:#111;color:#fff"/>
+        </div>
+        <div id="feedback" class="small"></div>
+      </div>
+
+      <footer>
+        <button class="btn hidden" id="nextBtn">Próximo</button>
+        <button class="btn" id="restartBtn">Reiniciar</button>
+      </footer>
+    </div>
+
+    <div class="card hidden" id="resultCard">
+      <div id="report"></div>
+      <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn" id="exportPDF">Exportar PDF</button>
+        <button class="btn" id="backToStart">Voltar</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+/* ===========================================================
+    WEBAUDIO: sons sintetizados (beep, win, lose)
+    =========================================================== */
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx;
+// Initialize AudioContext only after user interaction
+let isAudioInitialized = false;
+function ensureAudioCtx(){
+  if(!audioCtx){
+    audioCtx = new AudioCtx();
+    isAudioInitialized = true;
+  }
+}
+function playBeep(freq=880, duration=0.12, type='sine', gain=0.25){
+  if(!isAudioInitialized) return;
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = type; o.frequency.value = freq;
+  g.gain.value = gain;
+  o.connect(g); g.connect(audioCtx.destination);
+  o.start();
+  g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+  setTimeout(()=>o.stop(), duration*1000 + 20);
+}
+function playWin(){
+  if(!isAudioInitialized) return;
+  const now = audioCtx.currentTime;
+  const o1 = audioCtx.createOscillator();
+  const o2 = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o1.type='sine'; o2.type='sine';
+  o1.frequency.value = 880; o2.frequency.value = 1320;
+  g.gain.value = 0.12;
+  o1.connect(g); o2.connect(g); g.connect(audioCtx.destination);
+  o1.start(now); o2.start(now);
+  o1.frequency.exponentialRampToValueAtTime(1760, now+0.28);
+  o2.frequency.exponentialRampToValueAtTime(2640, now+0.28);
+  g.gain.exponentialRampToValueAtTime(0.0001, now+0.6);
+  setTimeout(()=>{ o1.stop(); o2.stop(); }, 700);
+}
+function playLose(){
+  if(!isAudioInitialized) return;
+  const now = audioCtx.currentTime;
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type='sawtooth'; o.frequency.value = 220;
+  g.gain.value = 0.18;
+  o.connect(g); g.connect(audioCtx.destination);
+  o.start(now);
+  o.frequency.exponentialRampToValueAtTime(80, now+0.5);
+  g.gain.exponentialRampToValueAtTime(0.0001, now+0.7);
+  setTimeout(()=>o.stop(), 800);
+}
+
+/* ===========================================================
+    QUIZ DATA (usarei exatamente a lista original enviada)
+    =========================================================== */
+const rawQuestions = [
+  {q:"O jiu-jitsu chegou ao Brasil por imigração de qual país?", a:["Japão"], wrong:["China","Coreia","Estados Unidos"]},
+  {q:"Em que ano o jiu-jitsu chegou ao Brasil?", a:["1908"], wrong:["1895","1920","1914"]},
+  {q:"Quem trouxe o jiu-jitsu ao Brasil dentro dos ginásios militares?", a:["Sada Miyako"], wrong:["Mitsuyo Maeda","Luiz França","Oswaldo Fadda"]},
+  {q:"Quem popularizou o jiu-jitsu fora do meio militar?", a:["Mitsuyo Maeda"], wrong:["Sada Miyako","Oswaldo Fadda","Eduardo Souza"]},
+  {q:"Qual foi o nome brasileiro dado a Mitsuyo Maeda?", a:["Conde Koma"], wrong:["Mestre Maeda","Sensei Koma","Professor Maeda"]},
+  {q:"Qual família ficou famosa pela difusão do jiu-jitsu no Brasil?", a:["Família Gracie"], wrong:["Família Souza","Família Fadda","Família Maeda"]},
+  {q:"Quem recebeu faixa preta de Maeda que mais tarde daria início à linhagem de Fadda?", a:["Luiz França"], wrong:["Oswaldo Fadda","Mitsuyo Maeda","Eduardo Souza"]},
+  {q:"Qual foi a “história não contada” da chegada ao jiu-jitsu no Brasil?", a:["O BJJ teve contribuição de muitos mestres; os Gracies só souberam divulgar e se autopromover."], wrong:["Só os Gracies ensinaram o jiu-jitsu","Só os militares trouxeram o jiu-jitsu","Ninguém mais ensinou além de Maeda"]},
+  {q:"Onde o jiu-jitsu foi inicialmente introduzido fora do Rio?", a:["Belém"], wrong:["São Paulo","Brasília","Salvador"]},
+  {q:"Quem foi Oswaldo Fadda?", a:["Um grande popularizador fora das elites do jiu-jitsu brasileiro (não Gracie)."], wrong:["Fundador da família Gracie","Primeiro campeão mundial","Inventor do jiu-jitsu"]},
+  {q:"Onde Fadda iniciou no jiu-jitsu?", a:["Com Luiz França"], wrong:["Com Mitsuyo Maeda","Com Sada Miyako","Com Eduardo Souza"]},
+  {q:"Qual foi o grande feito de Fadda contra a família Gracie?", a:["Venceu desafio (1955)."], wrong:["Derrotou Maeda","Formou a família Souza","Introduziu o jiu-jitsu em Nilópolis"]},
+  {q:"Qual tecnicas Fadda popularizou?", a:["Finalizações de pé, chave de calcanhar e “arm lock voador”."], wrong:["Estrangulamentos tradicionais","Passagem de guarda clássica","Raspagens básicas"]},
+  {q:"Onde Fadda ensinava jiu-jitsu?", a:["Principalmente em comunidades carentes, promovendo inclusão social"], wrong:["Em clubes exclusivos","Em academias da elite","Apenas em escolas militares"]},
+  {q:"Que frase é atribuída a Fadda?", a:["“Podemos vencer com técnica, não só com força.”"], wrong:["“Força é tudo no jiu-jitsu.”","“Só os fortes vencem.”","“Técnica não importa.”"]},
+  {q:"Qual o legado principal de Fadda?", a:["Popularização do jiu-jitsu no subúrbio e inclusão social."], wrong:["Campeonatos mundiais","Família Gracie","Apenas ensino militar"]},
+  {q:"Fadda teve ligação com a família Souza?", a:["Sim — foi quem graduou como faixa-preta mestres ligados à SZABJJ."], wrong:["Não teve nenhuma ligação","Só ensinou os Gracies","Fundou a SZABJJ"]},
+  {q:"Quem trouxe o jiu-jitsu para a família Souza?", a:["o atualmente Mestre faixa-vermelha Gustavo Souza (o mais velho dos irmãos)."], wrong:["Mestre Eduardo Souza","Mitsuyo Maeda","Oswaldo Fadda"]},
+  {q:"Em que ano a família começou a dar aulas em Nilópolis?", a:["1987"], wrong:["1995","2000","1975"]},
+  {q:"Onde foi a primeira aula da família Souza em Nilópolis?", a:["Na sala do mestre (em casa)."], wrong:["Em uma academia","Na escola","Na igreja"]},
+  {q:"Quem é a primeira mulher da família Souza a ser mestre?", a:["Mara Souza"], wrong:["Maria Gracie","Ana Fadda","Luiza Maeda"]},
+  {q:"Quem são os filhos dos mestres Eduardo e Mara?", a:["Dudu e Guilherme"], wrong:["Carlos e Paulo","João e José","Lucas e Mateus"]},
+  {q:"A família Souza é descendente direto de qual linhagem?", a:["Linhagem Fadda"], wrong:["Linhagem Gracie","Linhagem Maeda","Linhagem Brasil"]},
+  {q:"Qual é o lema da família?", a:["Tradição e respeito no tatame"], wrong:["Força e rapidez","Campeão acima de tudo","Vitória a qualquer custo"]},
+  {q:"Mestre Eduardo teve dificuldades na divulgação do jiu jitsu no início?", a:["Sim — houve resistência e até desafios de outras modalidades de luta, mas o mestre venceu e mostrou a eficiência do BJJ"], wrong:["Não, foi fácil","Só com apoio da família Gracie","Não teve resistência alguma"]},
+  {q:"A família Souza formou faixas-pretas em Nilópolis e região?", a:["Sim — Grande parte dos faixas-pretas da Baixada passaram por eles"], wrong:["Não formaram faixas-pretas","Só formaram faixas-coloridas","Formaram apenas em outra cidade"]},
+  {q:"Quem representa atualmente a família Souza em Nilópolis?", a:["Mestre Eduardo Souza com a SZABJJ"], wrong:["Dudu Souza","Mara Souza","Gustavo Souza"]},
+  {q:"Quem é o fundador formal da SZABJJ?", a:["Dudu Souza (Fundador), com liderança de Eduardo Souza"], wrong:["Mestre Eduardo Souza","Oswaldo Fadda","Mitsuyo Maeda"]},
+  {q:"Quem é o mais graduado da SZABJJ?", a:["Mestre Eduardo Souza"], wrong:["Dudu Souza","Gustavo Souza","Mara Souza"]},
+  {q:"Quantos filhos têm Eduardo e Mara e qual graduação?", a:["Dois — Dudu e Guilherme, ambos faixas-pretas"], wrong:["Três filhos, todos faixas-pretas","Um filho faixa-preta","Nenhum filho"]},
+  {q:"Qual a ordem atual das faixas dos mestres da SZABJJ (do mais graduado ao menos)?", a:["Vermelha e branca (8º grau), vermelha e preta (7º grau), preta"], wrong:["Preta, vermelha e branca, vermelha e preta","Vermelha e preta, preta, vermelha e branca","Branca, azul, preta"]},
+  {q:"Quem foi a primeira faixa-preta de Nilópolis?", a:["Mara Souza"], wrong:["Maria Souza","Carol Souza","Vera Souza"]},
+  {q:"Mara Souza é reconhecida mundialmente como?", a:["Uma das poucas mulheres 7º grau"], wrong:["Campeã mundial","Primeira campeã feminina","Inventora do jiu-jitsu"]},
+  {q:"Quem são os irmãos Souza?", a:["Gustavo, Raphael, Eduardo, Ismael e Israel"], wrong:["Carlos, Paulo, João e José","Mitsuyo, Oswaldo, Dudu","Ana, Mara, Luiza e Julia"]},
+  {q:"Os mestres Souza ainda competem?", a:["Alguns, sim"], wrong:["Nenhum compete","Todos competem","Só os jovens competem"]},
+  {q:"Todos os mestres Souza estão ativos no ensino?", a:["Sim — todos"], wrong:["Só alguns","Nenhum","Só o fundador"]},
+
+  // História do Jiu-Jitsu em Nilópolis
+  {q:"Quem introduziu o jiu-jitsu em Nilópolis?", a:["Mestre Eduardo Souza"], wrong:["Dudu Souza","Mara Souza","Oswaldo Fadda"]},
+  {q:"Em que ano isso aconteceu?", a:["1987"], wrong:["1990","1980","2000"]},
+  {q:"Onde foram dadas as primeiras aulas em Nilópolis?", a:["Na sala da Casa do mestre, igrejas e escolas"], wrong:["Somente em academias","Na rua","Na prefeitura"]},
+  {q:"Qual foi o maior desafio inicial?", a:["Desconhecimento da arte"], wrong:["Falta de espaço","Poucos alunos","Competição forte"]},
+  {q:"Houve competições na cidade?", a:["Sim — inclusive desafios de outras modalidades de luta, onde o BJJ do mestre venceu e mostrou sua eficiência"], wrong:["Não houve competições","Só treinos internos","Só competições de judô"]},
+  {q:"Quem ajudou mestre no início introdutório do BJJ em Nilópolis?", a:["Mara Souza"], wrong:["Dudu Souza","Gustavo Souza","Eduardo Souza"]},
+  {q:"Quantos anos a família tem de jiu-jitsu em Nilópolis?", a:["Mais de 35 anos"], wrong:["20 anos","50 anos","10 anos"]},
+  {q:"O que significa SZABJJ?", a:["Souza Jiu-Jitsu Brasileiro"], wrong:["Sociedade Zona Azul BJJ","Sistema Zonal de Artes Marciais","Souza Judo Brasileiro"]},
+  {q:"Quando a SZABJJ foi oficialmente fundada?", a:["2020"], wrong:["2015","2000","2018"]},
+  {q:"Quem fundou?", a:["Dudu (com Eduardo como cofundador)"], wrong:["Eduardo sozinho","Mara Souza","Oswaldo Fadda"]},
+  {q:"Quem são os instrutores principais da SZABJJ?", a:["Eduardo, Mara e Dudu"], wrong:["Gustavo, Raphael e Ismael","Somente Eduardo","Dudu e Mara"]},
+  {q:"Qual a filosofia da equipe SZABJJ?", a:["Respeito, técnica e família"], wrong:["Força e vitória","Competição acima de tudo","Velocidade e agressividade"]},
+  {q:"A equipe é reconhecida internacionalmente?", a:["Sim, a equipe possui diplomação com reconhecimento internacinal"], wrong:["Não reconhecida","Reconhecida só nacionalmente","Reconhecida só localmente"]},
+
+  // Regras e Pontuações
+  {q:"Quantos pontos vale uma passagem de guarda?", a:["3 pontos"], wrong:["2 pontos","4 pontos","1 ponto"]},
+  {q:"Qual a pontuação para uma montada?", a:["4 pontos"], wrong:["3 pontos","2 pontos","5 pontos"]},
+  {q:"Quantos pontos se ganha ao fazer uma raspagem?", a:["2 pontos"], wrong:["3 pontos","1 ponto","4 pontos"]},
+  {q:"Quantos pontos por controle das costas?", a:["4 pontos"], wrong:["3 pontos","2 pontos","1 ponto"]},
+  {q:"Quantos pontos vale o joelho na barriga?", a:["2 pontos"], wrong:["1 ponto","3 pontos","4 pontos"]},
+  {q:"Pontuação por queda?", a:["2 pontos"], wrong:["1 ponto","3 pontos","4 pontos"]},
+  {q:"Como é pontuada a finalização?", a:["Vitória imediata"], wrong:["3 pontos","2 pontos","1 ponto"]},
+  {q:"Pontos ao subir para meia-guarda?", a:["Nenhum"], wrong:["1 ponto","2 pontos","3 pontos"]},
+  {q:"O que acontece se mantém posição dominante?", a:["Ganha vantagem"], wrong:["Ganha pontos","Perde pontos","Nada acontece"]},
+  {q:"Quais ações não valem pontos mas influenciam?", a:["Vantagens e penalidades"], wrong:["Pontos extras","Bonificações","Descontos"]},
+  {q:"como são as formas de ganhar a luta no jiu-jitsu esportivo?", a:["atraves de pontuação ou finalização"], wrong:["só finalização","só por pontos","por desistência"]},
+  {q:"Qual é a premissia do jiu-jitisu?", a:["o mais fraco prevalecer contra o mais forte atraves de tecnica de alavancas, torções e estrangulamentos"], wrong:["força bruta","vencer pela velocidade","usar força bruta"]},
+
+  // Pergunta aberta - ordem de faixas (campo texto)
+  {q:"qual e a orde de faixas do jiu jitsu ? essa pergunta vai ter um campo para o jogador escrever", isOpen:true, a:["branca, cinza, amarela, laranja, verde, azul, roxa, marrom, preta, vermelha e preta, vermelha e branca, vermelha"]}
+];
+
+/* ===========================================================
+    Quiz engine
+    =========================================================== */
+
+let questions = []; // expanded with shuffled options
+function prepareQuestions(){
+  questions = rawQuestions.map(item=>{
+    if(item.isOpen){
+      return { q: item.q, isOpen:true, correctText: item.a[0] };
+    } else {
+      const all = [item.a[0], ...item.wrong];
+      // we'll shuffle later when presenting
+      return { q: item.q, correct: item.a[0], options: all };
+    }
+  });
+}
+
+prepareQuestions();
+
+let current = 0;
+let playerName = "";
+let timerRef = null;
+let timeLeft = 30;
+let startTime, endTime;
+let answers = [];
+const totalQuestions = questions.length;
+
+const startBtn = document.getElementById('startBtn');
+const startCard = document.getElementById('startCard');
+const quizCard = document.getElementById('quizCard');
+const resultCard = document.getElementById('resultCard');
+const questionText = document.getElementById('questionText');
+const optionsDiv = document.getElementById('options');
+const progressDiv = document.getElementById('progress');
+const timerDiv = document.getElementById('timer');
+const nextBtn = document.getElementById('nextBtn');
+const restartBtn = document.getElementById('restartBtn');
+const reportDiv = document.getElementById('report');
+const exportPDF = document.getElementById('exportPDF');
+const backToStart = document.getElementById('backToStart');
+
+function shuffleArray(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a; }
+
+function startQuiz(){
+  const input = document.getElementById('playerName');
+  const name = input.value.trim();
+  if(!name){ alert('Digite seu nome para iniciar.'); return; }
+  
+  // Initialize AudioContext on user interaction
+  ensureAudioCtx();
+  
+  playerName = name;
+  current = 0;
+  answers = [];
+  startTime = Date.now();
+  startCard.classList.add('hidden');
+  resultCard.classList.add('hidden');
+  quizCard.classList.remove('hidden');
+  showQuestion();
+}
+
+startBtn.addEventListener('click', startQuiz);
+restartBtn.addEventListener('click', ()=> location.reload());
+backToStart.addEventListener('click', ()=> location.reload());
+
+function showQuestion(){
+  clearInterval(timerRef);
+  const qObj = questions[current];
+  progressDiv.textContent = `Pergunta ${current+1} de ${totalQuestions}`;
+  document.getElementById('feedback').textContent = '';
+  document.getElementById('textAnswerWrap').classList.add('hidden');
+  optionsDiv.innerHTML = '';
+  nextBtn.classList.add('hidden');
+  nextBtn.disabled = true;
+
+  if(qObj.isOpen){
+    questionText.textContent = qObj.q;
+    document.getElementById('textAnswerWrap').classList.remove('hidden');
+    document.getElementById('textAnswer').value = '';
+    timeLeft = 120;
+    updateTimerDisplay();
+    timerRef = setInterval(timerTick,1000);
+
+    const textAnswerInput = document.getElementById('textAnswer');
+    textAnswerInput.oninput = function(){
+      nextBtn.disabled = this.value.trim().length === 0;
+    };
+    nextBtn.classList.remove('hidden');
+    nextBtn.disabled = textAnswerInput.value.trim().length === 0;
+  } else {
+    questionText.textContent = qObj.q;
+    const opts = qObj.options.slice();
+    shuffleArray(opts);
+    opts.forEach((opt, idx)=>{
+      const btn = document.createElement('button');
+      btn.className = 'option-btn';
+      btn.type = 'button';
+      btn.innerText = opt;
+      btn.onclick = () => onSelectOption(btn, opt, qObj.correct);
+      optionsDiv.appendChild(btn);
+    });
+    timeLeft = 30;
+    updateTimerDisplay();
+    timerRef = setInterval(timerTick,1000);
+  }
+}
+
+function onSelectOption(buttonEl, selectedValue, correctValue){
+  clearInterval(timerRef);
+  const btns = optionsDiv.querySelectorAll('button');
+  btns.forEach(b=>b.disabled = true);
+  const isCorrect = normalizeText(selectedValue) === normalizeText(correctValue);
+  if(isCorrect){
+    buttonEl.classList.add('correct');
+    document.getElementById('feedback').style.color = '#7CFC00';
+    document.getElementById('feedback').textContent = 'Resposta correta! Oss!';
+    playWin();
+  } else {
+    buttonEl.classList.add('wrong');
+    document.getElementById('feedback').style.color = '#ff6666';
+    document.getElementById('feedback').textContent = 'Resposta errada! Resposta correta: ' + correctValue;
+    btns.forEach(b=>{
+      if(normalizeText(b.innerText) === normalizeText(correctValue)){
+        b.classList.add('correct');
+      }
+    });
+    playLose();
+  }
+  answers.push({q: questionText.textContent, your: selectedValue, correct: correctValue, isCorrect: isCorrect, timeout:false});
+  nextBtn.disabled = false;
+  nextBtn.classList.remove('hidden');
+}
+
+function normalizeText(s){
+  if(!s) return '';
+  return s.toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
+}
+
+function timerTick(){
+  timeLeft--;
+  updateTimerDisplay();
+  if(timeLeft === 10){
+    playBeep(880,0.12,'sine',0.18);
+  } else if(timeLeft <= 5 && timeLeft > 0){
+    playBeep(1000,0.05,'sine',0.06);
+  }
+  if(timeLeft <= 0){
+    clearInterval(timerRef);
+    handleTimeout();
+  }
+}
+
+function updateTimerDisplay(){
+  const mm = Math.floor(timeLeft/60).toString().padStart(2,'0');
+  const ss = (timeLeft%60).toString().padStart(2,'0');
+  timerDiv.textContent = `⏳ ${mm}:${ss}`;
+}
+
+function handleTimeout(){
+  document.getElementById('feedback').style.color = '#ff6666';
+  document.getElementById('feedback').textContent = 'Tempo esgotado!';
+  const qObj = questions[current];
+  if(qObj.isOpen){
+    const txt = document.getElementById('textAnswer').value.trim();
+    answers.push({q: qObj.q, your: txt || '(sem resposta)', correct: qObj.correctText || qObj.a, isCorrect:false, timeout:true});
+  } else {
+    answers.push({q: qObj.q, your: '(sem resposta)', correct: qObj.correct, isCorrect:false, timeout:true});
+    const btns = optionsDiv.querySelectorAll('button');
+    btns.forEach(b=>b.disabled = true);
+    btns.forEach(b=>{
+      if(normalizeText(b.innerText) === normalizeText(qObj.correct)){
+        b.classList.add('correct');
+      }
+    });
+  }
+  playLose();
+  nextBtn.disabled = false;
+  nextBtn.classList.remove('hidden');
+}
+
+nextBtn.addEventListener('click', ()=>{
+  const qObj = questions[current];
+  if(qObj.isOpen){
+    clearInterval(timerRef);
+    const txt = document.getElementById('textAnswer').value.trim();
+    const normalizedAnswer = normalizeText(txt || '');
+    const normalizedExpected = normalizeText(qObj.correctText || qObj.a);
+    const isCorrect = checkFaixaAnswerTolerance(normalizedAnswer, normalizedExpected);
+    
+    if (txt) {
+      if(isCorrect){
+        document.getElementById('feedback').style.color = '#7CFC00';
+        document.getElementById('feedback').textContent = 'Resposta correta! Oss!';
+        playWin();
+      } else {
+        document.getElementById('feedback').style.color = '#ff6666';
+        document.getElementById('feedback').textContent = 'Resposta errada! Resposta correta: ' + (qObj.correctText || qObj.a);
+        playLose();
+      }
+      answers.push({q: qObj.q, your: txt || '(sem resposta)', correct: qObj.correctText || qObj.a, isCorrect: isCorrect, timeout:false});
+    } else {
+      answers.push({q: qObj.q, your: '(sem resposta)', correct: qObj.correctText || qObj.a, isCorrect: false, timeout:true});
+      document.getElementById('feedback').style.color = '#ff6666';
+      document.getElementById('feedback').textContent = 'Tempo esgotado!';
+    }
+    setTimeout(()=>{ showNextOrResult(); }, 800);
+    return;
+  }
+  showNextOrResult();
+});
+
+function showNextOrResult(){
+  current++;
+  if(current < totalQuestions){
+    showQuestion();
+  } else {
+    showResult();
+  }
+}
+
+function checkFaixaAnswerTolerance(user, expected){
+  if(!user) return false;
+  const userWords = user.split(/[\s,]+/).filter(Boolean);
+  const expectedWords = expected.split(/[\s,]+/).filter(Boolean);
+  if (userWords.length !== expectedWords.length) return false;
+  for(let i=0; i<userWords.length; i++){
+    if(userWords[i] !== expectedWords[i]) return false;
+  }
+  return true;
+}
+
+function showResult(){
+  clearInterval(timerRef);
+  endTime = Date.now();
+  quizCard.classList.add('hidden');
+  resultCard.classList.remove('hidden');
+  
+  const total = answers.length;
+  const correctCount = answers.filter(a=>a.isCorrect).length;
+  const totalTimeInSeconds = Math.floor((endTime - startTime) / 1000);
+  const minutes = Math.floor(totalTimeInSeconds / 60);
+  const seconds = totalTimeInSeconds % 60;
+  
+  const message = (correctCount >= (total/2)) ? 'Oss! Você é um Grande conhecedor da História do BJJ e da Linhagem Souza!' : 'Que pena! Você precisa estudar mais para conhecer melhor a arte suave e a linhagem de seus mestres.';
+  
+  let html = `<h2 class="report-title">Relatório final - ${escapeHtml(playerName)}</h2>`;
+  html += `<p class="small"><strong>Acertos:</strong> ${correctCount} de ${total}</p>`;
+  html += `<p class="small"><strong>Tempo total de finalização:</strong> ${minutes}m ${seconds}s</p>`;
+  html += `<p style="color:${(correctCount >= (total/2))?'#7CFC00':'#ff6666'};font-weight:800">${message}</p>`;
+  
+  const wrongs = answers.filter(a=>!a.isCorrect);
+  if(wrongs.length>0){
+    html += `<h3 style="color:var(--accent);margin-bottom:6px">Respostas incorretas:</h3><ul>`;
+    wrongs.forEach(w=>{
+      html += `<li style="margin-bottom:8px"><b>Pergunta:</b> ${escapeHtml(w.q)}<br/><b>Sua resposta:</b> ${escapeHtml(w.your)} ${w.timeout?'<i>(tempo esgotado)</i>':''}<br/><b>Resposta correta:</b> ${escapeHtml(w.correct)}</li>`;
+    });
+    html += `</ul>`;
+  } else {
+    html += `<p>Parabéns! Todas as respostas corretas.</p>`;
+  }
+  
+  reportDiv.innerHTML = html;
+}
+
+exportPDF.addEventListener('click', ()=>{
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  let y = 15;
+  doc.setFontSize(16);
+  doc.setTextColor(230,0,0);
+  doc.text('Relatório Quiz SZABJJ', 14, y);
+  y += 8;
+  doc.setFontSize(12);
+  doc.setTextColor(0,0,0);
+  doc.text(`Jogador: ${playerName}`, 14, y);
+  y += 8;
+  const total = answers.length;
+  const correctCount = answers.filter(a=>a.isCorrect).length;
+  doc.text(`Acertos: ${correctCount} de ${total}`, 14, y);
+  y += 8;
+  const totalTimeInSeconds = Math.floor((endTime - startTime) / 1000);
+  const minutes = Math.floor(totalTimeInSeconds / 60);
+  const seconds = totalTimeInSeconds % 60;
+  doc.text(`Tempo total: ${minutes}m ${seconds}s`, 14, y);
+  y += 10;
+  const wrongs = answers.filter(a=>!a.isCorrect);
+  if(wrongs.length>0){
+    doc.setFontSize(13);
+    doc.setTextColor(230,0,0);
+    doc.text('Respostas incorretas:', 14, y);
+    y += 8;
+    doc.setFontSize(11);
+    wrongs.forEach(w=>{
+      const lines = doc.splitTextToSize(`Pergunta: ${w.q}\nSua resposta: ${w.your}\nResposta correta: ${w.correct}`, 180);
+      if(y + lines.length*6 > 280){ doc.addPage(); y = 15; }
+      doc.text(lines, 14, y);
+      y += lines.length*6 + 6;
+    });
+  } else {
+    doc.text('Parabéns! Todas as respostas corretas.', 14, y);
+  }
+  doc.save(`Relatorio_Quiz_SZABJJ_${playerName.replace(/\s+/g,'_')}.pdf`);
+});
+
+function escapeHtml(text){
+  if(!text) return '';
+  return text.toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+(function(){
+  document.getElementById('progress').textContent = `Pergunta 0 de ${totalQuestions}`;
+})();
+
+</script>
+</body>
+</html>
