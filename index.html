@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Quiz SZABJJ</title>
 
+<!-- Favicon -->
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <link rel="manifest" href="site.webmanifest">
+  
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <style>
@@ -161,27 +167,23 @@ const rawQuestions = [
   {q:"Qual foi o nome brasileiro dado a Mitsuyo Maeda?", a:["Conde Koma"], wrong:["Mestre Maeda","Sensei Koma","Professor Maeda"]},
   {q:"Qual família ficou famosa pela difusão do jiu-jitsu no Brasil?", a:["Família Gracie"], wrong:["Família Souza","Família Fadda","Família Maeda"]},
   {q:"Quem recebeu faixa preta de Maeda que mais tarde daria início à linhagem de Fadda?", a:["Luiz França"], wrong:["Oswaldo Fadda","Mitsuyo Maeda","Eduardo Souza"]},
-  {q:"Qual foi a “história não contada” da chegada ao jiu-jitsu no Brasil?", a:["O BJJ teve contribuição de muitos mestres; os Gracies só souberam divulgar e se autopromover."], wrong:["Só os Gracies ensinaram o jiu-jitsu","Só os militares trouxeram o jiu-jitsu","Ninguém mais ensinou além de Maeda"]},
+  {q:"Qual foi a “história não contada” sobre a criação do jiu-jitsu brasileiro?", a:["O BJJ teve contribuição de muitos mestres; os Gracies só souberam divulgar e se autopromover."], wrong:["Só os Gracies ensinaram o jiu-jitsu","Só os militares trouxeram o jiu-jitsu","Ninguém mais ensinou além de Maeda"]},
   {q:"Onde o jiu-jitsu foi inicialmente introduzido fora do Rio?", a:["Belém"], wrong:["São Paulo","Brasília","Salvador"]},
   {q:"Quem foi Oswaldo Fadda?", a:["Um grande popularizador fora das elites do jiu-jitsu brasileiro (não Gracie)."], wrong:["Fundador da família Gracie","Primeiro campeão mundial","Inventor do jiu-jitsu"]},
   {q:"Onde Fadda iniciou no jiu-jitsu?", a:["Com Luiz França"], wrong:["Com Mitsuyo Maeda","Com Sada Miyako","Com Eduardo Souza"]},
-  {q:"Qual foi o grande feito de Fadda contra a família Gracie?", a:["Venceu desafio (1955)."], wrong:["Derrotou Maeda","Formou a família Souza","Introduziu o jiu-jitsu em Nilópolis"]},
+  {q:"Qual foi o grande feito de Fadda contra a família Gracie?", a:["Desafiou a família rival e venceu (1951)."], wrong:["Derrotou Maeda","Formou a família Souza","Introduziu o jiu-jitsu em Nilópolis"]},
   {q:"Qual tecnicas Fadda popularizou?", a:["Finalizações de pé, chave de calcanhar e “arm lock voador”."], wrong:["Estrangulamentos tradicionais","Passagem de guarda clássica","Raspagens básicas"]},
   {q:"Onde Fadda ensinava jiu-jitsu?", a:["Principalmente em comunidades carentes, promovendo inclusão social"], wrong:["Em clubes exclusivos","Em academias da elite","Apenas em escolas militares"]},
   {q:"Que frase é atribuída a Fadda?", a:["“Podemos vencer com técnica, não só com força.”"], wrong:["“Força é tudo no jiu-jitsu.”","“Só os fortes vencem.”","“Técnica não importa.”"]},
   {q:"Qual o legado principal de Fadda?", a:["Popularização do jiu-jitsu no subúrbio e inclusão social."], wrong:["Campeonatos mundiais","Família Gracie","Apenas ensino militar"]},
   {q:"Fadda teve ligação com a família Souza?", a:["Sim — foi quem graduou como faixa-preta mestres ligados à SZABJJ."], wrong:["Não teve nenhuma ligação","Só ensinou os Gracies","Fundou a SZABJJ"]},
-  {q:"Quem trouxe o jiu-jitsu para a família Souza?", a:["o atualmente Mestre faixa-vermelha Gustavo Souza (o mais velho dos irmãos)."], wrong:["Mestre Eduardo Souza","Mitsuyo Maeda","Oswaldo Fadda"]},
-  {q:"Em que ano a família começou a dar aulas em Nilópolis?", a:["1987"], wrong:["1995","2000","1975"]},
-  {q:"Onde foi a primeira aula da família Souza em Nilópolis?", a:["Na sala do mestre (em casa)."], wrong:["Em uma academia","Na escola","Na igreja"]},
+  {q:"Quem trouxe o jiu-jitsu para a família Souza?", a:["Mestre Gustavo Souza, atualmente faixa vermelha (o mais velho dos irmãos)."], wrong:["Mestre Eduardo Souza","Mitsuyo Maeda","Oswaldo Fadda"]},
   {q:"Quem é a primeira mulher da família Souza a ser mestre?", a:["Mara Souza"], wrong:["Maria Gracie","Ana Fadda","Luiza Maeda"]},
-  {q:"Quem são os filhos dos mestres Eduardo e Mara?", a:["Dudu e Guilherme"], wrong:["Carlos e Paulo","João e José","Lucas e Mateus"]},
   {q:"A família Souza é descendente direto de qual linhagem?", a:["Linhagem Fadda"], wrong:["Linhagem Gracie","Linhagem Maeda","Linhagem Brasil"]},
   {q:"Qual é o lema da família?", a:["Tradição e respeito no tatame"], wrong:["Força e rapidez","Campeão acima de tudo","Vitória a qualquer custo"]},
   {q:"Mestre Eduardo teve dificuldades na divulgação do jiu jitsu no início?", a:["Sim — houve resistência e até desafios de outras modalidades de luta, mas o mestre venceu e mostrou a eficiência do BJJ"], wrong:["Não, foi fácil","Só com apoio da família Gracie","Não teve resistência alguma"]},
   {q:"A família Souza formou faixas-pretas em Nilópolis e região?", a:["Sim — Grande parte dos faixas-pretas da Baixada passaram por eles"], wrong:["Não formaram faixas-pretas","Só formaram faixas-coloridas","Formaram apenas em outra cidade"]},
   {q:"Quem representa atualmente a família Souza em Nilópolis?", a:["Mestre Eduardo Souza com a SZABJJ"], wrong:["Dudu Souza","Mara Souza","Gustavo Souza"]},
-  {q:"Quem é o fundador formal da SZABJJ?", a:["Dudu Souza (Fundador), com liderança de Eduardo Souza"], wrong:["Mestre Eduardo Souza","Oswaldo Fadda","Mitsuyo Maeda"]},
   {q:"Quem é o mais graduado da SZABJJ?", a:["Mestre Eduardo Souza"], wrong:["Dudu Souza","Gustavo Souza","Mara Souza"]},
   {q:"Quantos filhos têm Eduardo e Mara e qual graduação?", a:["Dois — Dudu e Guilherme, ambos faixas-pretas"], wrong:["Três filhos, todos faixas-pretas","Um filho faixa-preta","Nenhum filho"]},
   {q:"Qual a ordem atual das faixas dos mestres da SZABJJ (do mais graduado ao menos)?", a:["Vermelha e branca (8º grau), vermelha e preta (7º grau), preta"], wrong:["Preta, vermelha e branca, vermelha e preta","Vermelha e preta, preta, vermelha e branca","Branca, azul, preta"]},
@@ -192,16 +194,16 @@ const rawQuestions = [
   {q:"Todos os mestres Souza estão ativos no ensino?", a:["Sim — todos"], wrong:["Só alguns","Nenhum","Só o fundador"]},
 
   // História do Jiu-Jitsu em Nilópolis
-  {q:"Quem introduziu o jiu-jitsu em Nilópolis?", a:["Mestre Eduardo Souza"], wrong:["Dudu Souza","Mara Souza","Oswaldo Fadda"]},
+  {q:"Quem introduziu o jiu-jitsu em Nilópolis?", a:["Eduardo Souza"], wrong:["Dudu Souza","Mara Souza","Oswaldo Fadda"]},
   {q:"Em que ano isso aconteceu?", a:["1987"], wrong:["1990","1980","2000"]},
   {q:"Onde foram dadas as primeiras aulas em Nilópolis?", a:["Na sala da Casa do mestre, igrejas e escolas"], wrong:["Somente em academias","Na rua","Na prefeitura"]},
   {q:"Qual foi o maior desafio inicial?", a:["Desconhecimento da arte"], wrong:["Falta de espaço","Poucos alunos","Competição forte"]},
   {q:"Houve competições na cidade?", a:["Sim — inclusive desafios de outras modalidades de luta, onde o BJJ do mestre venceu e mostrou sua eficiência"], wrong:["Não houve competições","Só treinos internos","Só competições de judô"]},
-  {q:"Quem ajudou mestre no início introdutório do BJJ em Nilópolis?", a:["Mara Souza"], wrong:["Dudu Souza","Gustavo Souza","Eduardo Souza"]},
+  {q:"Quem ajudou mestre Eduardo no início introdutório do BJJ em Nilópolis?", a:["Mara Souza"], wrong:["Dudu Souza","Gustavo Souza","Eduardo Souza"]},
   {q:"Quantos anos a família tem de jiu-jitsu em Nilópolis?", a:["Mais de 35 anos"], wrong:["20 anos","50 anos","10 anos"]},
   {q:"O que significa SZABJJ?", a:["Souza Jiu-Jitsu Brasileiro"], wrong:["Sociedade Zona Azul BJJ","Sistema Zonal de Artes Marciais","Souza Judo Brasileiro"]},
   {q:"Quando a SZABJJ foi oficialmente fundada?", a:["2020"], wrong:["2015","2000","2018"]},
-  {q:"Quem fundou?", a:["Dudu (com Eduardo como cofundador)"], wrong:["Eduardo sozinho","Mara Souza","Oswaldo Fadda"]},
+  {q:"Quem é o fundador formal da SZABJJ?", a:["Dudu Souza (Fundador), com liderança de Eduardo Souza"], wrong:["Mestre Eduardo Souza","Oswaldo Fadda","Mitsuyo Maeda"]},
   {q:"Quem são os instrutores principais da SZABJJ?", a:["Eduardo, Mara e Dudu"], wrong:["Gustavo, Raphael e Ismael","Somente Eduardo","Dudu e Mara"]},
   {q:"Qual a filosofia da equipe SZABJJ?", a:["Respeito, técnica e família"], wrong:["Força e vitória","Competição acima de tudo","Velocidade e agressividade"]},
   {q:"A equipe é reconhecida internacionalmente?", a:["Sim, a equipe possui diplomação com reconhecimento internacinal"], wrong:["Não reconhecida","Reconhecida só nacionalmente","Reconhecida só localmente"]},
@@ -215,11 +217,15 @@ const rawQuestions = [
   {q:"Pontuação por queda?", a:["2 pontos"], wrong:["1 ponto","3 pontos","4 pontos"]},
   {q:"Como é pontuada a finalização?", a:["Vitória imediata"], wrong:["3 pontos","2 pontos","1 ponto"]},
   {q:"Pontos ao subir para meia-guarda?", a:["Nenhum"], wrong:["1 ponto","2 pontos","3 pontos"]},
-  {q:"O que acontece se mantém posição dominante?", a:["Ganha vantagem"], wrong:["Ganha pontos","Perde pontos","Nada acontece"]},
+  {q:"O que acontece se mantém quase conseguir executar uma posiçã?", a:["Ganha vantagem"], wrong:["Ganha pontos","Perde pontos","Nada acontece"]},
   {q:"Quais ações não valem pontos mas influenciam?", a:["Vantagens e penalidades"], wrong:["Pontos extras","Bonificações","Descontos"]},
   {q:"como são as formas de ganhar a luta no jiu-jitsu esportivo?", a:["atraves de pontuação ou finalização"], wrong:["só finalização","só por pontos","por desistência"]},
   {q:"Qual é a premissia do jiu-jitisu?", a:["o mais fraco prevalecer contra o mais forte atraves de tecnica de alavancas, torções e estrangulamentos"], wrong:["força bruta","vencer pela velocidade","usar força bruta"]},
-
+  {q:"O ARM LOCK e uma?", a:["Chave de braço"], wrong:["Estrangulamento","Chave de pe","Chave de rins"]},
+  {q:"O golpe conhecido como Ezequiel é um?", a:["Estrangulamento"], wrong:["Chave de pe","Chave de braço","Triângulo"]},
+  {q:"O bate-estaca é um golpe?", a:["proibido e leva a desclassificação"], wrong:["Valido somente para faixa preta","Valido somente para faixa marrom e preta","Valido para todas as faixas a sima de 16 anos"]},
+  {q:"O que devemos fazer primeiro ao entrar no tatame? ", a:["Cumprimentar o mestre"], wrong:["Amarrar a faixa","Atravessar pelo meio do tatame","Conversar em voz baixa"]},
+  
   // Pergunta aberta - ordem de faixas (campo texto)
   {q:"qual e a orde de faixas do jiu jitsu ? essa pergunta vai ter um campo para o jogador escrever", isOpen:true, a:["branca, cinza, amarela, laranja, verde, azul, roxa, marrom, preta, vermelha e preta, vermelha e branca, vermelha"]}
 ];
@@ -539,4 +545,5 @@ function escapeHtml(text){
 
 </script>
 </body>
+
 </html>
